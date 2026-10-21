@@ -18,7 +18,7 @@ PRD_INFO_SCHEMA = StructType([
     StructField("prd_cost", IntegerType(), True),
     StructField("prd_line", StringType(), True),
     StructField("prd_start_dt", StringType(), True),
-    StructField("prd_end_dt", DateType(), True)
+    StructField("prd_end_dt", StringType(), True)
 ])
 
 
