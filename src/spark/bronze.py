@@ -6,6 +6,8 @@ Bronze rules:
 - full load: every run overwrites the previous output (truncate and insert)
 """
 
+import logging
+
 from pyspark.sql import functions as F
 
 from src.common import config
@@ -18,6 +20,9 @@ from src.common.schemas import (
     SALES_DETAILS_SCHEMA,
 )
 from src.common.spark_session import get_spark
+
+
+logger = logging.getLogger(__name__)
 
 
 def load_table(spark, source, file_name, table_name, schema):
@@ -63,10 +68,19 @@ TABLES = [
 
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(message)s"
+    )
     spark = get_spark("bronze_load")
 
-    for source, file_name, table_name, schema in TABLES:
-        count = load_table(spark, source, file_name, table_name, schema)
-        print(f"{table_name} : {count}")
-
-    spark.stop()
+    try :
+        for source, file_name, table_name, schema in TABLES:
+            try :
+                count = load_table(spark, source, file_name, table_name, schema)
+            except Exception as e:
+                logger.error(f"Failed to load {table_name}: {e}") 
+                raise  
+            logger.info(f"{table_name} : {count}")
+    finally:
+        spark.stop()
