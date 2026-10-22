@@ -36,7 +36,7 @@ def clean_crm_cust_info(df):
         )
         .withColumn(
             "cst_lastname",
-            F.trim(F.col("cst_firstname"))
+            F.trim(F.col("cst_lastname"))
         )
     )
 
