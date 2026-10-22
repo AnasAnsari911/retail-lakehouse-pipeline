@@ -2,6 +2,7 @@ import logging
 
 from pyspark.sql import Window
 from pyspark.sql import functions as F
+from pyspark.sql.types import DateType
 
 from src.common import config
 from src.common.spark_session import get_spark
@@ -80,6 +81,64 @@ def clean_crm_cust_info(df):
     return df
 
 
+def clean_crm_prd_info(df):
+
+    df = df.withColumn(
+            "cat_id",
+            F.regexp_replace(
+                F.substring(F.col("prd_key"), 1,5),
+                "-",
+                "_"
+            )
+        )   
+
+    df = df.withColumn("prd_start_dt", F.col("prd_start_dt").cast(DateType()))
+    
+    window_spec = Window.partitionBy("prd_key").orderBy("prd_start_dt")
+    
+    df = df.withColumn(
+        "prd_end_dt",
+        F.date_sub(
+            F.lead("prd_start_dt", 1).over(window_spec),
+                1
+        )
+    )
+
+    df = df.withColumn("prd_key",F.substring("prd_key", 7, 100))
+
+    df = df.fillna(0,subset=["prd_cost"])
+
+    df = df.withColumn(
+        "prd_line",
+        F.upper(F.trim(F.col("prd_line")))
+    )
+
+    df = df.withColumn(
+            "prd_line",
+            F.when(F.col("prd_line") == "M", "Mountain")
+            .when(F.col("prd_line") == "S", "Other Sales")
+            .when(F.col("prd_line") == "T", "Touring")
+            .when(F.col("prd_line") == "R", "Road")
+            .otherwise("n/a")
+    )
+
+    df = df.select(
+        "prd_id", 
+        "cat_id", 
+        "prd_key", 
+        "prd_nm", 
+        "prd_cost", 
+        "prd_line", 
+        "prd_start_dt", 
+        "prd_end_dt"
+    )
+
+    df = df.withColumn("dwh_load_date", F.current_timestamp())
+
+    return df
+
+
+
 
 def load_silver_table(spark, table_name, clean_func):
     df = spark.read.parquet(str(config.BRONZE_DIR / table_name))
@@ -98,7 +157,8 @@ if __name__ == "__main__":
 
     spark = get_spark("silver_load")
     try :
-        count = load_silver_table(spark, "crm_cust_info", clean_crm_cust_info)
-        logger.info(f"crm_cust_info : {count}")
+        count = load_silver_table(spark, "crm_prd_info", clean_crm_prd_info)
+        logger.info(f"crm_prd_info : {count}")
+        spark.read.parquet(str(config.SILVER_DIR / "crm_prd_info")).show(10, truncate=False)
     finally:
         spark.stop()
