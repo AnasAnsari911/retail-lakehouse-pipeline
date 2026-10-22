@@ -72,7 +72,7 @@ if __name__ == "__main__":
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(message)s"
     )
-    spark = get_spark("bronze_load")
+    spark = get_spark("load_bronze")
 
     try :
         for source, file_name, table_name, schema in TABLES:
