@@ -137,6 +137,48 @@ def clean_crm_prd_info(df):
 
     return df
 
+def _parse_yyyymmdd(col_name):
+    """Turn an integer like 20101229 into a date. 0 or a wrong length becomes null."""
+    c = F.col(col_name)
+    return F.when(
+        c.isNull() | (c == 0) | (F.length(c.cast("string")) != 8),
+        F.lit(None),
+    ).otherwise(F.to_date(c.cast("string"), "yyyyMMdd"))
+
+
+def clean_crm_sales_details(df):
+
+    new_sales = F.when(
+        F.col("sls_sales").isNull()
+        | (F.col("sls_sales") <= 0)
+        | (F.col("sls_sales") != F.col("sls_quantity") * F.abs(F.col("sls_price"))),
+        F.col("sls_quantity") * F.abs(F.col("sls_price")),
+    ).otherwise(F.col("sls_sales"))
+
+    new_price = (
+        F.when(
+            F.col("sls_price").isNull() | (F.col("sls_price") <= 0),
+            F.col("sls_sales") / F.expr("nullif(sls_quantity, 0)"),
+        )
+        .otherwise(F.col("sls_price"))
+        .cast("int")
+    )
+
+    df = df.select(
+        "sls_ord_num",
+        "sls_prd_key",
+        "sls_cust_id",
+        _parse_yyyymmdd("sls_order_dt").alias("sls_order_dt"),
+        _parse_yyyymmdd("sls_ship_dt").alias("sls_ship_dt"),
+        _parse_yyyymmdd("sls_due_dt").alias("sls_due_dt"),
+        new_sales.alias("sls_sales"),
+        "sls_quantity",
+        new_price.alias("sls_price"),
+    )
+
+    df = df.withColumn("dwh_load_date", F.current_timestamp())
+
+    return df
 
 
 
@@ -147,18 +189,34 @@ def load_silver_table(spark, table_name, clean_func):
     return spark.read.parquet(str(config.SILVER_DIR / table_name)).count()
 
 
-
+logger = logging.getLogger(__name__)
 
 
 if __name__ == "__main__":
 
-    logging.basicConfig(level=logging.INFO, format= "%(asctime)s %(levelname)s %(message)s")
-    logger = logging.getLogger(__name__)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(message)s"
+    )
 
     spark = get_spark("silver_load")
-    try :
-        count = load_silver_table(spark, "crm_prd_info", clean_crm_prd_info)
-        logger.info(f"crm_prd_info : {count}")
-        spark.read.parquet(str(config.SILVER_DIR / "crm_prd_info")).show(10, truncate=False)
+
+    try:
+        count = load_silver_table(
+            spark,
+            "crm_sales_details",
+            clean_crm_sales_details
+        )
+
+        logger.info("crm_sales_details: %d rows loaded", count)
+
+        spark.read.parquet(
+            str(config.SILVER_DIR / "crm_sales_details")
+        ).show(10, truncate=False)
+
+    except Exception:
+        logger.exception("Failed to load crm_sales_details")
+        raise
+
     finally:
         spark.stop()
