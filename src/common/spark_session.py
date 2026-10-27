@@ -17,5 +17,6 @@ def get_spark(app_name="dwh_pipeline"):
         SparkSession.builder.appName(app_name)
         .master("local[*]")
         .config("spark.sql.shuffle.partitions", "4")
+        .config("spark.jars.packages", "org.postgresql:postgresql:42.7.4")
         .getOrCreate()
     )
