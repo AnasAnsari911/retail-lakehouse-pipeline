@@ -3,3 +3,4 @@ lake/
 datasets/
 __pycache__/
 .env
+.vscode/
