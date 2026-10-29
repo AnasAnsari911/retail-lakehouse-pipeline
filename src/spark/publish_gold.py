@@ -14,28 +14,13 @@ Credentials come from the .env file, never from the code.
 
 Run from the project root:  python -m src.spark.publish_gold
 """
-
 import logging
-import os
-
-from dotenv import load_dotenv
 
 from src.common import config
 from src.common.spark_session import get_spark
+from src.common.postgres import jdbc_options
 
 logger = logging.getLogger(__name__)
-
-# Read POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB from the .env file
-load_dotenv(config.ROOT / ".env")
-
-POSTGRES_DB = os.getenv("POSTGRES_DB")
-POSTGRES_USER = os.getenv("POSTGRES_USER")
-POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
-POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5433")
-
-# Spark runs on the host, so Postgres is reached through the port published by Docker.
-JDBC_URL = f"jdbc:postgresql://localhost:{POSTGRES_PORT}/{POSTGRES_DB}"
-JDBC_DRIVER = "org.postgresql.Driver"
 
 # Order matters: dimensions before the fact table (foreign keys)
 TABLES = [
@@ -54,11 +39,8 @@ def publish_table(spark, table_name):
     (
         df.write
         .format("jdbc")
-        .option("url", JDBC_URL)
         .option("dbtable", db_table)
-        .option("user", POSTGRES_USER)
-        .option("password", POSTGRES_PASSWORD)
-        .option("driver", JDBC_DRIVER)
+        .options(**jdbc_options())
         # truncate: empty the existing table instead of dropping it, so the
         # primary keys, foreign keys and column types from the DDL are kept.
         .option("truncate", True)
@@ -73,11 +55,8 @@ def publish_table(spark, table_name):
     result_df = (
         spark.read
         .format("jdbc")
-        .option("url", JDBC_URL)
         .option("dbtable", db_table)
-        .option("user", POSTGRES_USER)
-        .option("password", POSTGRES_PASSWORD)
-        .option("driver", JDBC_DRIVER)
+        .options(**jdbc_options())
         .load()
     )
 
