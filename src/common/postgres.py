@@ -16,12 +16,12 @@ POSTGRES_DB = os.getenv("POSTGRES_DB")
 POSTGRES_USER = os.getenv("POSTGRES_USER")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
 POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5433")
-
+POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
 
 def jdbc_options():
     """Return the options Spark needs to connect to PostgreSQL."""
     return {
-        "url": f"jdbc:postgresql://localhost:{POSTGRES_PORT}/{POSTGRES_DB}",
+        "url": f"jdbc:postgresql://{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}",
         "user": POSTGRES_USER,
         "password": POSTGRES_PASSWORD,
         "driver": "org.postgresql.Driver",

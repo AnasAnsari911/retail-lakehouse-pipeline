@@ -4,3 +4,6 @@ datasets/
 __pycache__/
 .env
 .vscode/
+airflow/logs/
+airflow/.env
+airflow/config/
