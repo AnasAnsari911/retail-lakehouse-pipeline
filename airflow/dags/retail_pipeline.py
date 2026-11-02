@@ -25,7 +25,7 @@ with DAG(
     dag_id="retail_pipeline",
     description="Bronze -> Silver -> Gold -> PostgreSQL -> data quality checks",
     start_date=datetime(2026, 1, 1),
-    schedule=None,          # manual runs for now; we'll switch to "@daily" later
+        schedule="@daily",      # runs once a day at midnight (UTC)
     catchup=False,
     default_args=default_args,
     tags=["retail", "etl"],
