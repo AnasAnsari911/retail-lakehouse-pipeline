@@ -1,4 +1,5 @@
 services:
+  
   nifi:
     image: apache/nifi:2.12.0
     container_name: retail_nifi
@@ -10,6 +11,7 @@ services:
       SINGLE_USER_CREDENTIALS_PASSWORD: ${NIFI_PASSWORD}
     volumes:
       - ./ingest:/data/ingest
+      - nifi_conf:/opt/nifi/nifi-current/conf
 
       
   postgres:
@@ -27,3 +29,4 @@ services:
 
 volumes:
   pgdata:
+  nifi_conf:
