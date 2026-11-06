@@ -1,4 +1,4 @@
-"""Bronze layer: load the raw CRM and ERP CSV files as-is into the lake.
+"""Bronze layer: load the validated CRM and ERP CSV files from ingest/landing into the lake.
 
 Bronze rules:
 - no cleaning or transformation of the source data
@@ -31,7 +31,7 @@ def load_table(spark, source, file_name, table_name, schema):
     Returns the number of rows that were saved.
     """
     # Full path: <project root>/datasets/<source>/<file_name>
-    file_path = config.DATASETS / source / file_name
+    file_path = config.LANDING_DIR / file_name
 
     # Read the CSV with the explicit schema (no guessing of column types)
     df = (
