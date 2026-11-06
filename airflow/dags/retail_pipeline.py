@@ -13,7 +13,7 @@ default_args = {
 }
 
 
-def spark_task(task_id, module):
+def python_task(task_id, module):
     """One task that runs a pipeline script, like: python -m src.spark.bronze"""
     return BashOperator(
         task_id=task_id,
@@ -31,10 +31,11 @@ with DAG(
     tags=["retail", "etl"],
 ) as dag:
 
-    bronze = spark_task("bronze", "src.spark.bronze")
-    silver = spark_task("silver", "src.spark.silver")
-    gold = spark_task("gold", "src.spark.gold")
-    publish_gold = spark_task("publish_gold", "src.spark.publish_gold")
-    quality_checks = spark_task("quality_checks", "src.quality.run_checks")
+    bronze = python_task("bronze", "src.spark.bronze")
+    silver = python_task("silver", "src.spark.silver")
+    gold = python_task("gold", "src.spark.gold")
+    publish_gold = python_task("publish_gold", "src.spark.publish_gold")
+    quality_checks = python_task("quality_checks", "src.quality.run_checks")
+    check_landing = python_task("check_landing", "src.ingest.check_landing")
 
-    bronze >> silver >> gold >> publish_gold >> quality_checks
+    check_landing >> bronze >> silver >> gold >> publish_gold >> quality_checks
