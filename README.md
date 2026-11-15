@@ -18,13 +18,12 @@ through bronze, silver and gold layers stored as **Apache Iceberg** tables
 
 ## Architecture
 
-<p align="center">
-  <img src="docs/images/architecture.png" alt="Architecture: NiFi validates CSV files, Airflow runs Spark and Iceberg bronze, silver and gold layers, publishes gold to PostgreSQL and runs data quality checks, with a Hive Metastore as the catalog" width="1000">
-</p>
+![Architecture: NiFi validates CSV files, Airflow runs Spark and Iceberg bronze, silver and gold layers, publishes gold to PostgreSQL and runs data quality checks, with a Hive Metastore as the catalog](docs/images/architecture.png)
 
 Each coloured outline shows which technology runs which stage. Airflow's dashed
-border wraps everything it controls, from `check_landing` to the quality checks. NiFi sits outside it, because NiFi runs
-continuously on its own and Airflow only starts once validated files have landed.
+border wraps everything it controls, from `check_landing` to the quality checks.
+NiFi sits outside it, because NiFi runs continuously on its own and Airflow only
+starts once validated files have landed.
 
 ## Tech stack
 
@@ -106,13 +105,9 @@ continuously on its own and Airflow only starts once validated files have landed
 - Runs in Docker on a custom image that adds Java and PySpark to the official Airflow image.
 - Each task runs the matching Python module, so the same code can also be run by hand.
 
-<p align="center">
-  <img src="docs/images/airflow_dag.png" alt="Airflow DAG run with all six tasks successful" width="850">
-</p>
+![Airflow DAG run with all six tasks successful](docs/images/airflow_dag.png)
 
-<p align="center">
-  <img src="docs/images/nifi_flow.png" alt="NiFi flow that validates and routes the CSV files" width="850">
-</p>
+![NiFi flow that validates and routes the CSV files](docs/images/nifi_flow.png)
 
 ## Iceberg features demonstrated
 
@@ -120,7 +115,6 @@ continuously on its own and Airflow only starts once validated files have landed
 - **Time travel:** `src/spark/iceberg_timetravel.py` reads `fact_sales` as of an older snapshot.
 - **Rollback:** `src/spark/iceberg_rollback_demo.py` makes a bad insert and an accidental delete on a throwaway table, then undoes both by rolling back to an earlier snapshot.
 
-## Data and credits
 
 The source CSV files and the original warehouse design come from the
 [Data With Baraa SQL Data Warehouse project](https://github.com/DataWithBaraa/sql-data-warehouse-project)
