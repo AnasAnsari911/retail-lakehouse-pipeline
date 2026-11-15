@@ -8,3 +8,4 @@ airflow/logs/
 airflow/.env
 airflow/config/
 ingest/
+hive/jars/

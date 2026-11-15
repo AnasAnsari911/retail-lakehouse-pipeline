@@ -5,7 +5,6 @@ Each check returns a result (a dictionary) instead of crashing, so every
 check runs and every result can be saved to the audit table.
 """
 
-from src.common import config
 from src.common.spark_session import get_spark
 
 from src.common.postgres import jdbc_options
@@ -95,10 +94,10 @@ def run_all_checks(spark):
     results = []
 
     # Load the tables once, reuse them for several checks
-    customers = spark.read.parquet(str(config.GOLD_DIR / "dim_customers"))
-    products = spark.read.parquet(str(config.GOLD_DIR / "dim_products"))
-    sales = spark.read.parquet(str(config.GOLD_DIR / "fact_sales"))
-    silver_sales = spark.read.parquet(str(config.SILVER_DIR / "crm_sales_details"))
+    customers = spark.table("lakehouse.gold.dim_customers")
+    products = spark.table("lakehouse.gold.dim_products")
+    sales = spark.table("lakehouse.gold.fact_sales")
+    silver_sales = spark.table("lakehouse.silver.crm_sales_details")
 
     # --- Checks on one table at a time ---
     results.append(check_not_empty(customers, "gold", "dim_customers"))
@@ -136,7 +135,7 @@ def run_all_checks(spark):
         results.append(check_equal(
             lake_df.count(), read_postgres(spark, table_name).count(),
             "reconciliation", table_name, "lake_to_postgres_row_count",
-            details="lake/gold vs PostgreSQL",
+            details="lakehouse.gold vs PostgreSQL",
         ))
 
     lake_total = sales.agg(F.sum("sales_amount")).collect()[0][0]

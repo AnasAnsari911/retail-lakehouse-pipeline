@@ -1,7 +1,7 @@
 """
 Publish the gold layer from the data lake to PostgreSQL.
 
-Reads  : lake/gold/<table>   (Parquet written by gold.py)
+Reads  : lakehouse.gold.<table>   (Parquet written by gold.py)
 Writes : gold.<table>        (PostgreSQL tables created by sql/postgres/01_create_gold.sql)
 
 Tables are loaded dimensions first, then the fact table, because the fact
@@ -16,7 +16,6 @@ Run from the project root:  python -m src.spark.publish_gold
 """
 import logging
 
-from src.common import config
 from src.common.spark_session import get_spark
 from src.common.postgres import jdbc_options
 
@@ -33,7 +32,7 @@ TABLES = [
 def publish_table(spark, table_name):
     """Load lake/gold/<table_name> into Postgres gold.<table_name>
     and return the row count read back from Postgres."""
-    df = spark.read.parquet(str(config.GOLD_DIR / table_name))
+    df = spark.table(f"lakehouse.gold.{table_name}")
     db_table = f"gold.{table_name}"
 
     (

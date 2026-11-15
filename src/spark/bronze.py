@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 def load_table(spark, source, file_name, table_name, schema):
-    """Read one CSV, add tracking columns, write it to bronze as Parquet.
+    """Read one CSV, add tracking columns, write it to bronze as an Iceberg table.
 
     Returns the number of rows that were saved.
     """
@@ -48,12 +48,13 @@ def load_table(spark, source, file_name, table_name, schema):
         .withColumn("dwh_source_file", F.input_file_name())   # which file it came from
     )
 
-    # mode("overwrite") replaces old data, so reruns never create duplicates
-    output_path = config.BRONZE_DIR / table_name
-    df.write.mode("overwrite").parquet(str(output_path))
+    # createOrReplace = full load: the table is rebuilt every run, so reruns never
+    # create duplicates, and Iceberg keeps the old snapshots in its history
+    table_id = f"lakehouse.bronze.{table_name}"
+    df.writeTo(table_id).using("iceberg").createOrReplace()
 
     # Count what was actually saved, not the CSV in memory
-    return spark.read.parquet(str(output_path)).count()
+    return spark.table(table_id).count()
 
 
 # (source folder, file name, bronze table name, schema)

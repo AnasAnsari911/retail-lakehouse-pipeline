@@ -1,7 +1,7 @@
 """Silver layer: clean and standardise the bronze tables.
 
 Silver rules:
-- read each table from the bronze layer (lake/bronze)
+- read each table from the bronze layer (lakehouse.bronze)
 - apply the cleaning rules ported from the SQL Server load_silver procedure
 - keep only the business columns and add a fresh technical column (dwh_load_date)
 - full load: every run overwrites the previous output (truncate and insert)
@@ -258,17 +258,21 @@ SILVER_TABLES = [
     ("erp_px_cat_g1v2", clean_erp_px_cat_g1v2),
 ]
 
-
 def load_silver_table(spark, table_name, clean_func):
-    """Read a bronze table, clean it, save it to silver. Returns the saved row count."""
-    df = spark.read.parquet(str(config.BRONZE_DIR / table_name))
+    """Read a bronze Iceberg table, clean it, save it to silver as an Iceberg table.
+
+    Returns the saved row count.
+    """
+    df = spark.table(f"lakehouse.bronze.{table_name}")
     df = clean_func(df)
 
-    # mode("overwrite") replaces old data, so reruns never create duplicates
-    df.write.mode("overwrite").parquet(str(config.SILVER_DIR / table_name))
+    # createOrReplace = full load: rebuilt every run, old snapshots stay in history
+    silver_id = f"lakehouse.silver.{table_name}"
+    df.writeTo(silver_id).using("iceberg").createOrReplace()
 
     # Count what was actually saved
-    return spark.read.parquet(str(config.SILVER_DIR / table_name)).count()
+    return spark.table(silver_id).count()
+
 
 
 if __name__ == "__main__":

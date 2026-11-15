@@ -30,20 +30,20 @@ logger = logging.getLogger(__name__)
 # Helpers
 # ---------------------------------------------------------------------------
 def read_silver(spark, table_name):
-    """Read one silver table from lake/silver/<table_name>."""
-    return spark.read.parquet(str(config.SILVER_DIR / table_name))
+    """Read one silver Iceberg table: lakehouse.silver.<table_name>."""
+    return spark.table(f"lakehouse.silver.{table_name}")
 
 
 def read_gold(spark, table_name):
-    """Read one gold table from lake/gold/<table_name>."""
-    return spark.read.parquet(str(config.GOLD_DIR / table_name))
+    """Read one gold Iceberg table: lakehouse.gold.<table_name>."""
+    return spark.table(f"lakehouse.gold.{table_name}")
 
 
 def write_gold(spark, df, table_name):
-    """Overwrite lake/gold/<table_name> and return the row count read back."""
-    df.write.mode("overwrite").parquet(str(config.GOLD_DIR / table_name))
+    """Rebuild lakehouse.gold.<table_name> and return the row count read back."""
+    table_id = f"lakehouse.gold.{table_name}"
+    df.writeTo(table_id).using("iceberg").createOrReplace()
     return read_gold(spark, table_name).count()
-
 
 # ---------------------------------------------------------------------------
 # Build functions (one per gold table)

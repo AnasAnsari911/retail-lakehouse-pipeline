@@ -27,6 +27,29 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+
+  hive-metastore:
+    image: apache/hive:4.0.0
+    container_name: retail_hive_metastore
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    ports:
+      - "9083:9083"
+    environment:
+      SERVICE_NAME: metastore
+      DB_DRIVER: postgres
+      SERVICE_OPTS: >-
+        -Djavax.jdo.option.ConnectionDriverName=org.postgresql.Driver
+        -Djavax.jdo.option.ConnectionURL=jdbc:postgresql://postgres:5432/metastore_db
+        -Djavax.jdo.option.ConnectionUserName=${POSTGRES_USER}
+        -Djavax.jdo.option.ConnectionPassword=${POSTGRES_PASSWORD}
+    volumes:
+      - ./hive/jars/postgres.jar:/opt/hive/lib/postgres.jar
+      - hive_warehouse:/opt/hive/data/warehouse
+      - ./lake/warehouse:/opt/project/lake/warehouse
+
 volumes:
   pgdata:
   nifi_conf:
+  hive_warehouse:
